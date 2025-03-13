@@ -1,0 +1,55 @@
+version: 1
+
+models:
+  - name: tapio_liquidity_and_volume
+    description: |
+      A table that aggregates daily liquidity and volume data for Tapio protocol pools.
+      This table is generated using the `tapio_liquidity_and_volume` macro.
+    columns:
+      - name: day
+        description: The day for which the liquidity and volume data is aggregated.
+        data_type: date
+        tests:
+          - not_null
+
+      - name: pool_address
+        description: The address of the liquidity pool.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: path_symbols
+        description: The token pair symbols in the format `TOKEN0-TOKEN1`.
+        data_type: varchar
+        tests:
+          - not_null
+
+      - name: token0_balance
+        description: The scaled balance of token0 in the pool.
+        data_type: numeric
+        tests:
+          - not_null
+
+      - name: token1_balance
+        description: The scaled balance of token1 in the pool.
+        data_type: numeric
+        tests:
+          - not_null
+
+      - name: token0_liquidity_usd
+        description: The USD value of token0 liquidity in the pool.
+        data_type: numeric
+        tests:
+          - not_null
+
+      - name: token1_liquidity_usd
+        description: The USD value of token1 liquidity in the pool.
+        data_type: numeric
+        tests:
+          - not_null
+
+      - name: total_volume
+        description: The total swap volume for the day in raw units.
+        data_type: numeric
+        tests:
+          - not_null
