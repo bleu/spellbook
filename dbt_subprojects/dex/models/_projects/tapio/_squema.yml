@@ -53,3 +53,20 @@ models:
         data_type: numeric
         tests:
           - not_null
+
+sources:
+  - name: tapio_base
+    tables:
+      - name: SelfPeggingAsset_evt_TokenSwapped
+      - name: SelfPeggingAsset_evt_Minted
+      - name: SelfPeggingAsset_evt_Donated
+      - name: SelfPeggingAsset_evt_Redeemed
+      - name: pools
+
+  - name: tapio_sonic
+    tables:
+      - name: SelfPeggingAsset_evt_TokenSwapped
+      - name: SelfPeggingAsset_evt_Minted
+      - name: SelfPeggingAsset_evt_Donated
+      - name: SelfPeggingAsset_evt_Redeemed
+      - name: pools
