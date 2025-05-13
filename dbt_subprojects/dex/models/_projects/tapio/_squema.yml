@@ -57,8 +57,8 @@ models:
 sources:
   - name: tapio_multichain
     tables:
-      - name: SelfPeggingAsset_evt_TokenSwapped
-      - name: SelfPeggingAsset_evt_Minted
-      - name: SelfPeggingAsset_evt_Donated
-      - name: SelfPeggingAsset_evt_Redeemed
+      - name: SelfPeggingAsset_evt_tokenswapped
+      - name: SelfPeggingAsset_evt_minted
+      - name: SelfPeggingAsset_evt_donated
+      - name: SelfPeggingAsset_evt_redeemed
       - name: pools
