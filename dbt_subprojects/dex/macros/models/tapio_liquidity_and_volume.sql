@@ -11,55 +11,59 @@
     prices_table = 'prices.usd'
 ) %}
 
-{%set project_name = project + '_' + blockchain %}
+{%set project_name = project + '_multichain' %}
 
 WITH 
     token_swapped_events AS (
         -- Extract data from TokenSwapped events
         SELECT
             block_time,
+            chain,
             contract_address AS pool_address,
             buyer AS provider,
             swapAmount AS amount,
             'TokenSwapped' AS event_type
         FROM {{ source(project_name, token_swapped_table) }}
-        WHERE swapAmount IS NOT NULL
+        WHERE chain = {{ blockchain }} AND swapAmount IS NOT NULL
     ),
 
     minted_events AS (
         -- Extract data from Minted events
         SELECT
             block_time,
+            chain,
             contract_address AS pool_address,
             provider,
             mintAmount AS amount,
             'Minted' AS event_type
         FROM {{ source(project_name, minted_table) }}
-        WHERE mintAmount IS NOT NULL
+        WHERE chain = {{ blockchain }} AND mintAmount IS NOT NULL
     ),
 
     donated_events AS (
         -- Extract data from Donated events
         SELECT
             block_time,
+            chain,
             contract_address AS pool_address,
             provider,
             mintAmount AS amount,
             'Donated' AS event_type
         FROM {{ source(project_name, donated_table) }}
-        WHERE mintAmount IS NOT NULL
+        WHERE chain = {{ blockchain }} AND mintAmount IS NOT NULL
     ),
 
     redeemed_events AS (
         -- Extract data from Redeemed events
         SELECT
             block_time,
+            chain,
             contract_address AS pool_address,
             provider,
             redeemAmount AS amount,
             'Redeemed' AS event_type
         FROM {{ source(project_name, redeemed_table) }}
-        WHERE redeemAmount IS NOT NULL
+        WHERE chain = {{ blockchain }} AND redeemAmount IS NOT NULL
     ),
 
     unified_events AS (
@@ -138,6 +142,7 @@ WITH
         LEFT JOIN daily_events de 
             ON pd.day = de.day 
             AND pd.pool_address = de.pool_address
+            AND pd.chain = {{ blockchain }}
     ),
 
     running_balance AS (
