@@ -17,7 +17,6 @@
     minted_table = 'SelfPeggingAsset_evt_Minted',
     donated_table = 'SelfPeggingAsset_evt_Donated',
     redeemed_table = 'SelfPeggingAsset_evt_Redeemed',
-    pools_table = 'pools',
     tokens_table = 'erc20.tokens',
     prices_table = 'prices.usd'
 ) }}

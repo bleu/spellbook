@@ -6,7 +6,6 @@
     minted_table = '',
     donated_table = '',
     redeemed_table = '',
-    pools_table = '',
     tokens_table = 'erc20.tokens',
     prices_table = 'prices.usd'
 ) %}
@@ -77,11 +76,47 @@ WITH
         SELECT * FROM redeemed_events
     ),
 
+    pool_tokens AS (
+        WITH filtered_pc AS (
+            SELECT *
+            FROM tapio_multichain.selfpeggingassetfactory_evt_poolcreated
+            WHERE chain = {{ blockchain }}
+        ),
+
+        pc_data AS (
+            SELECT 
+                pc.chain,
+                pc.poolToken AS pool_address,
+                pc.rampAController,
+                pc.selfPeggingAsset AS tokenA_address,
+                pc.wrappedPoolToken AS tokenB_address,
+                td.to,
+                pc.evt_block_time
+            FROM base.traces_decoded td
+            JOIN filtered_pc pc
+                ON td.tx_hash = pc.evt_tx_hash 
+                AND td.block_number = pc.evt_block_number
+                AND pc.contract_address != td.to
+                AND td.function_name = 'symbol'
+        ),
+
+        ordered_tokens AS (
+            SELECT 
+                pool_address,
+                LEAST(tokenA_address, tokenB_address) AS token0_address,
+                GREATEST(tokenA_address, tokenB_address) AS token1_address
+            FROM pc_data
+        )
+
+        SELECT DISTINCT *
+        FROM ordered_tokens
+    ),
+
     daily_events AS (
-        -- Aggregate liquidity changes per day
         SELECT 
             date_trunc('day', e.block_time) AS day,
             e.pool_address,
+            p.chain,
             p.token0_address,
             p.token1_address,
             t0.symbol AS token0_symbol,
@@ -95,7 +130,7 @@ WITH
                 ELSE 0 
             END) AS token1_daily_change
         FROM unified_events e
-        JOIN {{ source(project_name, pools_table) }} p ON e.pool_address = p.address
+        JOIN pool_tokens p ON e.pool_address = p.pool_address
         JOIN {{ tokens_table }} t0 ON p.token0_address = t0.address
         JOIN {{ tokens_table }} t1 ON p.token1_address = t1.address
         GROUP BY 1, 2, 3, 4, 5, 6
@@ -115,6 +150,7 @@ WITH
         -- Cross join pools with dates to ensure all combinations exist
         SELECT 
             ds.day,
+            de.chain,
             de.pool_address,
             de.token0_address,
             de.token1_address,
@@ -131,6 +167,7 @@ WITH
         -- Fill missing days to maintain continuity
         SELECT 
             pd.day,
+            pd.chain,
             pd.pool_address,
             pd.token0_address,
             pd.token1_address,
@@ -190,18 +227,19 @@ WITH
     ),
 
     volume_data AS (
-        -- Calculate daily swap volume per pool
         SELECT 
             date_trunc('day', e.block_time) AS day,
             e.pool_address,
             SUM(ABS(e.amount)) AS total_volume_raw
         FROM {{ source(project_name, token_swapped_table) }} e
+        WHERE e.chain = {{ blockchain }}
         GROUP BY 1, 2
     )
 
 -- Merge Liquidity + Volume per pool per day
 SELECT 
     f.day,
+    chain,
     f.pool_address,
     CASE
         WHEN f.token0_symbol IS NULL OR f.token1_symbol IS NULL THEN NULL
@@ -213,7 +251,7 @@ SELECT
     f.token1_liquidity_usd,
     COALESCE(v.total_volume_raw, 0) AS total_volume
 FROM final_data f
-LEFT JOIN volume_data v ON f.day = v.day AND f.pool_address = v.pool_address
+LEFT JOIN volume_data v ON f.day = v.day AND f.pool_address = v.pool_address AND f.chain = v.chain
 ORDER BY f.day, f.pool_address;
 
 {% endmacro %}
