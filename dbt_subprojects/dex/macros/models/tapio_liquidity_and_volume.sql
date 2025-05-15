@@ -6,6 +6,7 @@
     minted_table = '',
     donated_table = '',
     redeemed_table = '',
+    factory_table = '',
     tokens_table = 'erc20.tokens',
     prices_table = 'prices.usd'
 ) %}
@@ -77,39 +78,15 @@ WITH
     ),
 
     pool_tokens AS (
-        WITH filtered_pc AS (
-            SELECT *
-            FROM tapio_multichain.selfpeggingassetfactory_evt_poolcreated
-            WHERE chain = {{ blockchain }}
-        ),
-
-        pc_data AS (
-            SELECT 
-                pc.chain,
-                pc.poolToken AS pool_address,
-                pc.rampAController,
-                pc.selfPeggingAsset AS tokenA_address,
-                pc.wrappedPoolToken AS tokenB_address,
-                td.to,
-                pc.evt_block_time
-            FROM base.traces_decoded td
-            JOIN filtered_pc pc
-                ON td.tx_hash = pc.evt_tx_hash 
-                AND td.block_number = pc.evt_block_number
-                AND pc.contract_address != td.to
-                AND td.function_name = 'symbol'
-        ),
-
-        ordered_tokens AS (
-            SELECT 
-                pool_address,
-                LEAST(tokenA_address, tokenB_address) AS token0_address,
-                GREATEST(tokenA_address, tokenB_address) AS token1_address
-            FROM pc_data
-        )
-
-        SELECT DISTINCT *
-        FROM ordered_tokens
+        SELECT
+            chain,
+            contract_address,
+            
+            -- Extract and cast token addresses from JSON
+            CAST(from_hex(json_extract_scalar(argument, '$.tokenA')) AS varbinary) AS tokenA,
+            CAST(from_hex(json_extract_scalar(argument, '$.tokenB')) AS varbinary) AS tokenB,
+        FROM {{ source(project_name, factory_table) }}
+        WHERE call_success = true AND chain = {{ blockchain }}
     ),
 
     daily_events AS (
@@ -131,8 +108,8 @@ WITH
             END) AS token1_daily_change
         FROM unified_events e
         JOIN pool_tokens p ON e.pool_address = p.pool_address
-        JOIN {{ tokens_table }} t0 ON p.token0_address = t0.address
-        JOIN {{ tokens_table }} t1 ON p.token1_address = t1.address
+        JOIN {{ tokens_table }} t0 ON p.tokenA = t0.address
+        JOIN {{ tokens_table }} t1 ON p.tokenB = t1.address
         GROUP BY 1, 2, 3, 4, 5, 6
     ),
 
