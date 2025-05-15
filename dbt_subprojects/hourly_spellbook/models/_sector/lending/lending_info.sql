@@ -2,7 +2,7 @@
         tags = [ 'static'],
         schema='lending',
         alias = 'info',
-        post_hook='{{ expose_spells(\'["arbitrum", "avalanche_c", "base", "bnb", "celo", "ethereum", "fantom", "gnosis", "optimism", "polygon", "scroll", "zksync"]\',
+        post_hook='{{ expose_spells(\'["arbitrum", "avalanche_c", "base", "bnb", "celo", "ethereum", "fantom", "gnosis", "optimism", "polygon", "scroll", "sonic", "zksync"]\',
                                     "sector",
                                     "lending",
                                     \'["hildobby"]\') }}')
@@ -35,5 +35,5 @@ FROM (VALUES
     , ('strike', 'Strike', TRUE, 'Strike')
     , ('sonne_finance', 'Sonne Finance', TRUE, 'SonneFinance')
     , ('benqi', 'BENQI', TRUE, 'BenqiFinance')
-    , ('pike', 'Pike', FALSE, 'PikeFinance')
+    , ('pike', 'Pike', TRUE, 'PikeFinance')
     ) AS temp_table (project, name, has_flashloans, x_username)
